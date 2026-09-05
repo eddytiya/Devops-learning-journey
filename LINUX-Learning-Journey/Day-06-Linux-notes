@@ -1,0 +1,64 @@
+# Linux for DevOps - Day 5
+
+## Topic: Linux Volume Management with AWS EBS
+
+Today I continued learning about Linux volume management and how AWS EBS volumes are used with EC2 instances.
+
+## What is Storage in Linux?
+
+Storage is managed using block devices such as disks and volumes.
+
+In Linux, storage can appear as:
+
+- Block devices
+- Disks
+- Volumes
+- Partitions
+- Mount points
+
+## What is AWS EBS?
+
+AWS EBS stands for Elastic Block Store.
+
+It is used to create storage volumes that can be attached to EC2 instances.
+
+## What I Practiced
+
+- Understanding block storage
+- Understanding disk and volume concepts
+- Creating EBS volumes in AWS
+- Attaching EBS volumes to an EC2 instance
+- Planning multiple volumes
+- Understanding volume sizes
+- Learning that attached volumes must still be configured inside Linux
+
+## Example Volume Plan
+
+| Volume | Size |
+|---|---|
+| Volume 1 | 10 GB |
+| Volume 2 | 12 GB |
+| Volume 3 | 14 GB |
+
+These volumes can be created in AWS EBS and attached to an EC2 instance.
+
+## Important Concept
+
+Attaching a volume means AWS connects the EBS volume to the EC2 instance.
+
+Mounting a volume means Linux connects that storage to a directory so it can be used.
+
+## Basic Flow
+
+```text
+Create EBS Volume
+        ↓
+Attach Volume to EC2
+        ↓
+Check Volume in Linux
+        ↓
+Format Volume
+        ↓
+Mount Volume
+        ↓
+Use Storage
