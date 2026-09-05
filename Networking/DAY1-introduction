@@ -1,0 +1,238 @@
+# Road to DevOps - Day 6
+
+## Networking Day 1
+
+Today I started the networking part of my DevOps journey. Networking is one of the most important foundations for DevOps because servers, cloud services, applications, users, and databases all communicate through networks.
+
+## What I Learned
+
+- What networking means
+- Why networking is needed
+- How data travels through packets
+- What protocols are
+- What packet switching means
+- Difference between hub and switch
+- What a router does
+- What a NIC is
+- What DNS does
+- What ISP means
+- Basic idea of edge locations and CDN
+
+## Why Networking Is Important
+
+Networking helps devices communicate with each other. When we open a website, connect to a server, access a database, use SSH, or deploy an application in the cloud, networking is involved.
+
+In DevOps, networking is required for:
+
+- Connecting users to applications
+- Connecting applications to databases
+- Connecting servers inside a private network
+- Accessing cloud instances remotely
+- Managing ports, protocols, and traffic
+- Understanding load balancers, DNS, firewalls, and CDN
+
+## Protocols
+
+A protocol is a set of rules used for communication between devices.
+
+Examples:
+
+| Protocol | Use |
+|---|---|
+| HTTP | Website communication |
+| HTTPS | Secure website communication |
+| SSH | Secure remote server login |
+| FTP | File transfer |
+| TCP | Reliable data transmission |
+| UDP | Fast data transmission |
+
+## Data Packets
+
+Data is not usually sent as one large block. It is divided into smaller parts called packets.
+
+Each packet contains:
+
+- Source information
+- Destination information
+- Actual data
+- Sequence/order details
+
+Simple packet flow:
+
+```text
+Sender
+  |
+  | data is divided into packets
+  v
+[Packet 1] [Packet 2] [Packet 3]
+  |
+  | packets travel through network devices
+  v
+Receiver
+  |
+  | packets are arranged again
+  v
+Original data
+```
+
+## Packet Switching
+
+Packet switching means data is broken into packets and each packet can travel through the network separately. At the destination, packets are arranged again to form the original data.
+
+This helps networks send data efficiently instead of reserving one full dedicated path.
+
+## Switch
+
+A switch is a networking device used to connect multiple devices inside the same local network.
+
+It sends data only to the correct destination device instead of sending it everywhere.
+
+Example:
+
+```text
+PC1 ----\
+        \
+PC2 ---- Switch ---- Printer
+        /
+PC3 ----/
+```
+
+Use of switch:
+
+- Connects devices in a LAN
+- Sends data to the correct device
+- Reduces unnecessary traffic
+- Works mainly with MAC addresses
+
+## Hub
+
+A hub also connects multiple devices, but it sends data to all connected devices.
+
+Difference:
+
+| Device | How it sends data |
+|---|---|
+| Hub | Sends data to all devices |
+| Switch | Sends data only to the correct device |
+
+## NIC
+
+NIC stands for Network Interface Card.
+
+It is the hardware component that allows a computer or server to connect to a network.
+
+Examples:
+
+- Ethernet adapter
+- Wi-Fi adapter
+- Cloud instance virtual network interface
+
+## Router
+
+A router connects different networks together.
+
+Example:
+
+```text
+Home/Office LAN ---- Router ---- Internet
+```
+
+Use of router:
+
+- Connects one network to another network
+- Helps send traffic outside the local network
+- Chooses a path for data
+- Commonly used to connect LAN to internet
+
+## DNS
+
+DNS stands for Domain Name System.
+
+DNS converts human-readable domain names into IP addresses.
+
+Example:
+
+```text
+www.google.com  ->  IP address
+```
+
+DNS flow:
+
+```text
+User enters website name
+        |
+        v
+DNS resolves domain name
+        |
+        v
+IP address is returned
+        |
+        v
+Browser connects to server
+```
+
+## ISP
+
+ISP stands for Internet Service Provider.
+
+An ISP provides internet access to users and organizations.
+
+Examples:
+
+- Home broadband provider
+- Mobile network provider
+- Enterprise internet provider
+
+## Edge Location and CDN
+
+An edge location is a location closer to users where cached content can be stored and delivered faster.
+
+CDN stands for Content Delivery Network.
+
+A CDN improves performance by serving content from a nearby edge location instead of always going to the main server.
+
+CDN flow:
+
+```text
+User
+  |
+  v
+Nearest Edge Location
+  |
+  v
+Cached content delivered faster
+```
+
+## Simple Networking Flow
+
+```text
+User Device
+    |
+    v
+NIC
+    |
+    v
+Switch
+    |
+    v
+Router
+    |
+    v
+ISP
+    |
+    v
+Internet
+    |
+    v
+Server or Cloud Application
+```
+
+## Day 6 Summary
+
+Today I learned the basic building blocks of computer networking. I understood how devices communicate, how data is sent as packets, why protocols are needed, and how devices like switches, hubs, routers, and NICs help in network communication.
+
+This is an important step in my DevOps journey because cloud, Linux servers, SSH, DNS, load balancers, and application deployments all depend on networking fundamentals.
+
+## Hashtags
+
+`#100DaysOfDevOps` `#RoadToDevOps` `#DevOpsJourney` `#Networking` `#LinuxForDevOps` `#CloudComputing` `#AWS` `#DNS` `#TCPIP` `#DevOpsBasics` `#LearningInPublic` `#BeginnerDevOps`
