@@ -1,0 +1,59 @@
+Networking Learning Journey Day 2
+
+This repository documents two connected networking chapters from my Day 2 learning notes. The focus is on how human friendly domain names become IP addresses, and how network layers move data from an application to a destination.
+
+## Chapter 2 DNS and Name Resolution
+
+DNS, the Domain Name System, translates a domain such as `www.example.com` into an IP address that a device can use for routing. It is often described as the internet's phonebook, but it is better understood as a distributed naming system.
+
+### Resolution flow
+
+1. A browser asks the operating system for the address of a domain.
+2. The device checks its local cache. If a valid cached answer exists, the lookup can stop here.
+3. A recursive resolver checks its cache; when it has no answer, it queries the DNS hierarchy.
+4. The root server points the resolver to the relevant top level domain servers, such as `.com` or `.in`.
+5. The TLD server points the resolver to the authoritative name server for the domain.
+6. The authoritative server returns the requested record, for example an `A` record containing an IPv4 address.
+7. The resolver returns the answer to the client and caches it for the record's TTL.
+
+### Key ideas
+
+| Concept | Meaning |
+| --- | --- |
+| Recursive resolver | DNS service that performs the lookup on a client’s behalf |
+| Root server | Directs queries to the correct TLD server |
+| TLD | Top level domain such as `.com`, `.org`, or `.in` |
+| Authoritative server | Holds the official DNS records for a domain |
+| Cache and TTL | Temporary storage and the period an answer may be reused |
+
+## Chapter 3 OSI and TCP IP Models
+
+The OSI model explains networking through seven layers. TCP/IP is the practical internet suite, commonly presented as four layers. Data moves downward through the sending stack, crosses a physical network, and moves upward through the receiving stack.
+
+| OSI layer | Main responsibility | TCP IP mapping |
+| --- | --- | --- |
+| Application | User facing network services | Application |
+| Presentation | Formatting, encryption, compression | Application |
+| Session | Starts and manages conversations | Application |
+| Transport | End to end delivery, ports, TCP or UDP | Transport |
+| Network | IP addressing and routing | Internet |
+| Data Link | Frames, MAC addressing, local delivery | Network Access |
+| Physical | Signals, cables, radio, bits | Network Access |
+
+### Packet journey
+
+An application creates data. The transport layer wraps it in a TCP segment or UDP datagram and attaches port information. The network layer adds source and destination IP addresses to form a packet. The data link layer creates a frame using local MAC addresses, and the physical layer sends bits as electrical, optical, or wireless signals. At the destination, the headers are removed in reverse order.
+
+### TCP and UDP
+
+- **TCP** establishes a connection and uses acknowledgements, ordering, and retransmission to deliver data reliably.
+- **UDP** is connectionless and has lower overhead, but it does not guarantee delivery, order, or duplicate protection.
+
+## Diagrams
+
+The Word companion document contains original, readable diagrams for DNS resolution, DNS hierarchy, OSI to TCP/IP mapping, and encapsulation. They are designed as learning visuals rather than screenshots of the handwritten notes.
+
+## LinkedIn Posts
+
+- [Chapter 2 DNS LinkedIn post](linkedin_day2_chapter2_dns.md)
+- [Chapter 3 OSI and TCP IP LinkedIn post](linkedin_day2_chapter3_osi_tcpip.md)
