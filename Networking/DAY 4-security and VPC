@@ -1,0 +1,102 @@
+DevOps Security Practical
+
+This practical documents the security concepts and configuration checks I studied while preparing an Nginx workload for a cloud environment.
+
+## Objectives
+
+- Control server traffic with UFW.
+- Understand HTTP, HTTPS, TLS, ports, and certificates.
+- Apply the same least-privilege approach to AWS security groups.
+- Explain traffic flow through public and private VPC subnets.
+
+## Core Concepts
+
+### Firewall traffic
+
+| Direction | Meaning | Example |
+|---|---|---|
+| Ingress | Traffic entering a server or cloud resource | A browser connecting to HTTPS on port 443 |
+| Egress | Traffic leaving a server or cloud resource | A server downloading package updates |
+
+UFW is a host firewall. In AWS, a security group is a stateful virtual firewall attached to a resource such as an EC2 instance. Use both deliberately: only allow the protocol, port, and source range that the workload requires.
+
+### Nginx and UFW
+
+Check the available Nginx profiles:
+
+```bash
+sudo ufw app list
+```
+
+Typical profiles are:
+
+| Profile | Ports |
+|---|---|
+| `Nginx HTTP` | TCP 80 |
+| `Nginx HTTPS` | TCP 443 |
+| `Nginx Full` | TCP 80 and TCP 443 |
+
+Allow the profile required by the deployment:
+
+```bash
+sudo ufw allow 'Nginx Full'
+sudo ufw status verbose
+```
+
+If the site uses HTTPS only, keep port 443 open and configure Nginx to redirect port 80 to HTTPS. Do not remove port 80 until the redirect and certificate flow have been tested.
+
+### HTTPS and TLS
+
+HTTPS is HTTP protected by TLS. TLS encrypts traffic between the browser and server and helps the client verify the server identity using a certificate. SSL is the older term and protocol family; modern configurations should use TLS.
+
+### AWS security-group example
+
+For a restricted administration or testing setup, add an inbound rule such as:
+
+| Type | Protocol | Port | Source |
+|---|---|---:|---|
+| HTTPS | TCP | 443 | Your public IP in CIDR form |
+
+For a public website, use the smallest appropriate source range, often `0.0.0.0/0` and `::/0` for HTTPS only when public access is intended. Never expose SSH (22) broadly unless there is a justified, protected access method.
+
+### VPC and NAT gateway
+
+```text
+Internet
+   |
+Internet Gateway
+   |
+Public subnet: load balancer or public-facing service
+   |
+Private subnet: application or database workload
+   |
+NAT Gateway (outbound access from private workloads)
+```
+
+A NAT gateway enables outbound connections from private-subnet resources, for example to download updates. It does not make those resources directly reachable from the internet.
+
+## Ports Revised
+
+| Protocol | Default port | Typical purpose |
+|---|---:|---|
+| HTTPS | 443 | Encrypted web traffic |
+| SSH | 22 | Secure remote administration |
+| SMTP submission over TLS | 465 | Encrypted mail submission |
+| FTP | 21 | File transfer control connection |
+
+## Verification Checklist
+
+- [ ] Nginx service is running: `sudo systemctl status nginx`
+- [ ] UFW status and required Nginx profile are confirmed.
+- [ ] AWS security-group inbound rules are limited to required ports and sources.
+- [ ] HTTP-to-HTTPS redirect is tested if port 80 is exposed.
+- [ ] A valid TLS certificate is installed before calling the site secure.
+- [ ] Public and private subnet route tables are reviewed.
+
+## Key Takeaway
+
+Secure deployment is a layered practice: protocol selection, TLS, cloud network controls, host firewall rules, and subnet routing must align with the workload's actual requirements.
+
+## Hashtags
+
+#100DaysOfDevOps #RoadToDevOps #DevOpsJourney #Networking #OSIModel #TCPIP #ComputerNetworks #LinuxForDevOps #CloudComputing #AWS #DNS #DevOpsBasics #LearningInPublic #BeginnerDevOps #Nginx #UFW #Firewall #HTTPS #TLS #CyberSecurity #AWSCloud #VPC #SecurityGroups #NATGateway #Linux
