@@ -1,0 +1,93 @@
+# Day 10: Git and GitHub
+
+Today I practised the basics of Git and GitHub and learned how version control helps developers manage changes safely.
+
+## What I practised
+
+### 1. Creating a Git repository
+
+* Created a folder for the project.
+* Opened the folder in CMD.
+* Initialized Git using `git init`.
+* Opened the project folder in VS Code.
+
+### 2. Checking repository status
+
+Used:
+
+```bash
+git status
+```
+
+This helps check the current state of the repository and see which files are untracked, modified, or staged.
+
+### 3. Understanding branches
+
+A branch allows us to work on changes separately without directly affecting the main code.
+
+I practised:
+
+* Creating a new branch.
+* Switching between branches.
+* Returning to the `main` branch.
+* Understanding how files and commits differ between branches.
+
+For example, if a new file is created and committed in `dev`, it will not automatically appear in `main`.
+
+### 4. Staging and committing changes
+
+Used:
+
+```bash
+git add filename
+```
+
+This stages a specific file.
+
+Also learned:
+
+```bash
+git add .
+```
+
+This stages all changes in the current directory, so it should be used carefully.
+
+After staging, I practised creating commits to save changes in the repository.
+
+### 5. Restoring and unstaging files
+
+I practised restoring a deleted file before committing it.
+
+I also learned how to unstage a file when it was added by mistake.
+
+### 6. Understanding branch-specific changes
+
+I created files in different branches and observed that:
+
+* Changes committed in `main` are not automatically available in `dev`.
+* Changes committed in `dev` are not automatically available in `main`.
+* A branch keeps its own commit history.
+
+### 7. GitHub
+
+I practised:
+
+* Creating a GitHub repository.
+* Cloning a repository.
+* Adding new files.
+* Committing local changes.
+* Pushing changes to GitHub.
+
+I also learned that cloning an existing repository does not require running `git init` again.
+
+## Key takeaway
+
+Git helps track changes locally, while GitHub allows us to store and share repositories remotely.
+
+Understanding branches, staging, commits, and pushing makes it easier to work on projects without accidentally affecting the main code.
+
+## Next
+
+I will continue practising Git and learn more about remote repositories, pull, fetch, and merging.
+
+#100DaysOfDevOps #Git #GitHub #VersionControl #DevOps #LearningInPublic
