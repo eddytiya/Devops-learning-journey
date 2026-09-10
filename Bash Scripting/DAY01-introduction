@@ -1,0 +1,21 @@
+# Shell Scripting - Day 1
+
+## 📌 Topics Covered
+
+Today I started learning Shell/Bash scripting on Ubuntu.
+
+### 1. Vim Editor
+
+Basic Vim commands practiced:
+
+- `i` → Enter insert mode
+- `Esc` → Exit insert mode
+- `:wq` → Save and quit
+- `:qa` → Quit without saving
+
+### 2. First Bash Shell Script
+
+Created my first shell script and learned the importance of:
+
+```bash
+#!/bin/bash
