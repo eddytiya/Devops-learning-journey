@@ -1,0 +1,154 @@
+# 🚀 Day 12 - Shell Scripting Day 2
+
+Continuing my **#100DaysOfDevOps** journey, today I went deeper into **Bash Shell Scripting** on an Ubuntu server.
+
+The focus was on using programming concepts in shell scripts to make repetitive tasks easier to automate.
+
+## 📚 Topics Covered
+
+### 1. Variables
+
+Learned how to create variables and store data such as strings.
+
+```bash
+name="jetha"
+echo "Name is $name"
+```
+
+Variables can be referenced throughout the script using `$variable_name`.
+
+---
+
+### 2. System Commands
+
+Learned how to execute system commands inside scripts and use their output dynamically with `$()`.
+
+```bash
+echo "Current date: $(date)"
+```
+
+This allows command output to be stored or directly displayed as part of another command.
+
+---
+
+### 3. Conditional Statements
+
+Practiced using:
+
+* `if`
+* `elif`
+* `else`
+
+Conditions were used for both **string comparisons** and **numerical comparisons**.
+
+Example:
+
+```bash
+if [ "$name" = "jetha" ];
+then
+    echo "Name matched"
+elif [ "$age" -ge 18 ];
+then
+    echo "Eligible"
+else
+    echo "Condition not matched"
+fi
+```
+
+Some commonly used numerical operators:
+
+```text
+-ge   Greater than or equal to
+-gt   Greater than
+-le   Less than or equal to
+-lt   Less than
+-eq   Equal to
+-ne   Not equal to
+```
+
+---
+
+### 4. Loops
+
+Practiced loops to automate repetitive tasks.
+
+#### C-style For Loop
+
+Used a `for` loop to generate sequential directories.
+
+```bash
+for ((i=1; i<=5; i++))
+do
+    mkdir "folder$i"
+done
+```
+
+#### While Loop
+
+Used `while` loops for repeated execution and filtering values such as even numbers.
+
+```bash
+i=1
+
+while [ $i -le 10 ]
+do
+    if [ $((i % 2)) -eq 0 ]
+    then
+        echo "$i is even"
+    fi
+
+    i=$((i+1))
+done
+```
+
+---
+
+### 5. Functions
+
+Learned how to create reusable blocks of code using functions.
+
+```bash
+check_loyalty() {
+    echo "Checking $1"
+}
+
+check_loyalty "jetha"
+```
+
+Here, `$1` represents the **first argument passed to the function**.
+
+Functions help make scripts more organized and reusable.
+
+---
+
+## 🛠️ Technologies & Tools
+
+* 🐧 Ubuntu Linux
+* 🐚 Bash
+* 💻 Shell Scripting
+* ☁️ Linux Server
+* ⚙️ DevOps Automation
+
+## 🎯 Key Takeaways
+
+* Learned how to use variables in Bash.
+* Practiced executing system commands using `$()`.
+* Understood conditional statements using `if`, `elif`, and `else`.
+* Practiced string and numerical comparisons.
+* Used `for` and `while` loops for automation.
+* Learned how to create and use functions.
+* Practiced passing arguments to functions using `$1`.
+
+## 📌 DevOps Relevance
+
+Shell scripting is an important skill in DevOps because it can be used to automate repetitive tasks, manage Linux servers, process files and logs, and build automation scripts for deployment and system administration.
+
+---
+
+### 🚀 100 Days of DevOps
+
+**Day 12/100 completed!**
+
+Continuing to learn, practice, and build my DevOps skills one day at a time.
+
+#100DaysOfDevOps #DevOps #ShellScripting #Bash #Linux #Ubuntu
