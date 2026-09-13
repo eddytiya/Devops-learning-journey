@@ -1,0 +1,70 @@
+# 🚀 Day 13 - Shell Scripting Day 3: Error Handling
+
+As part of my **#100DaysOfDevOps** journey, today I focused on **Error Handling in Bash Shell Scripting**.
+
+## 📌 What I Learned
+
+### 1. Error Handling in Bash
+
+Bash does not have a traditional `try-catch` mechanism like some programming languages.
+
+Instead, I practiced handling errors using **conditions and command status checks**.
+
+### 2. Handling Command Errors
+
+I worked with scripts where a command could succeed the first time but produce an error when executed again.
+
+For example, when a directory or resource already exists, running the same command again can generate an error.
+
+The goal was to detect and handle these situations instead of allowing the script to fail unexpectedly.
+
+### 3. Using `if` for Error Handling
+
+I practiced using `if` conditions to check whether commands completed successfully and handle the result accordingly.
+
+This makes shell scripts more reliable and easier to debug.
+
+### 4. Django Deployment Using Shell Scripting
+
+I applied error handling while creating a Shell Script for deploying a Django application.
+
+The deployment process included:
+
+* Cloning the Django repository
+* Checking for required libraries
+* Installing required dependencies
+* Running the deployment process
+* Handling errors during execution
+* Verifying that the application was deployed successfully
+
+### 5. Debugging the Deployment Script
+
+Initially, the deployment script still produced errors because the error handling wasn't implemented correctly.
+
+After updating the script and handling the errors properly, the Django application was successfully deployed.
+
+## 🧠 Key Takeaway
+
+Today's biggest takeaway was:
+
+> **A good automation script should not only execute successful commands, but also handle situations when something goes wrong.**
+
+Error handling makes automation scripts more reliable and practical in real DevOps environments.
+
+## 🛠️ Technologies & Concepts
+
+* Bash
+* Shell Scripting
+* Linux
+* Ubuntu
+* Error Handling
+* Conditional Statements
+* Django Deployment
+* Automation
+* Debugging
+
+## ✅ Day 13 Completed
+
+Continuing my journey of learning DevOps one day and one script at a time. 🚀
+
+#100DaysOfDevOps #DevOps #ShellScripting #Bash #Linux #Ubuntu #Django #LearningInPublic
