@@ -1,0 +1,625 @@
+# 🚀 JerseyHub DevOps Journey — Part 1
+
+## 📌 Project Goal
+
+The goal of this project is to implement a **complete DevOps workflow** for the **JerseyHub MERN application** and eventually deploy it as a production-ready website.
+
+The complete DevOps journey will gradually include areas such as:
+
+* 🐳 Docker containerization
+* ☁️ Cloud infrastructure
+* 🔄 CI/CD pipelines
+* 🌐 Production deployment
+* 🔐 Security and secrets management
+* 🔒 HTTPS and SSL/TLS
+* 📊 Monitoring
+* 📝 Centralized logging
+* 💾 Backups
+* ⚙️ Deployment automation
+* ☸️ Container orchestration
+* 🏗️ Infrastructure automation
+
+> **Important:** This document represents only **Part 1** of the JerseyHub DevOps journey. It documents the work completed so far and does not represent the complete DevOps implementation.
+
+---
+
+# ✅ Work Completed So Far
+
+## 1. Created a Separate DevOps Repository
+
+A separate repository was created specifically for the DevOps implementation.
+
+This allows DevOps experiments, Docker configurations, deployment files, CI/CD workflows, infrastructure configurations, and other operational changes to be developed without affecting the original working MERN project.
+
+### Repositories
+
+| Repository                  | Purpose                             |
+| --------------------------- | ----------------------------------- |
+| `eddytiya/jerseyhub`        | Original JerseyHub MERN application |
+| `eddytiya/jerseyhub-devops` | DevOps implementation               |
+| `main`                      | Primary branch                      |
+
+The existing Git history was preserved while connecting the DevOps copy to the new GitHub repository.
+
+### Commands Used
+
+```powershell
+git remote set-url origin https://github.com/eddytiya/jerseyhub-devops.git
+git push -u origin main
+```
+
+This provides a dedicated environment where the DevOps implementation can evolve independently from the original application.
+
+---
+
+## 2. Reviewed the Application Architecture
+
+Before starting containerization, the application architecture was inspected.
+
+The following areas were reviewed:
+
+* Project directory structure
+* Backend dependencies
+* Frontend dependencies
+* Application startup commands
+* Application ports
+* Environment variables
+* Production build process
+* Database configuration
+
+### Current Architecture
+
+| Component | Technology        | Command          | Port   |
+| --------- | ----------------- | ---------------- | ------ |
+| Backend   | Node.js + Express | `npm start`      | `2987` |
+| Frontend  | React + Vite      | `npm run dev`    | `5173` |
+| Database  | MongoDB Atlas     | External Service | N/A    |
+
+The frontend production build command is:
+
+```bash
+npm run build
+```
+
+This investigation was necessary before creating Docker images because the container configuration must match the actual runtime requirements of the application.
+
+---
+
+## 3. Reviewed Environment Configuration
+
+The application uses environment variables to manage configuration and sensitive information.
+
+### Backend Environment Variables
+
+The backend uses runtime environment variables for areas such as:
+
+* MongoDB connection
+* Session security
+* Email configuration
+* Google authentication
+* Razorpay configuration
+* Shipping configuration
+* Payment configuration
+* Application port
+* Application environment
+
+Sensitive backend credentials should only be supplied at runtime and should never be stored directly inside Docker images.
+
+### Frontend Environment Variables
+
+The Vite frontend uses environment variables for:
+
+* Backend API URL
+* Google authentication
+* Cloudinary configuration
+* Razorpay configuration
+
+### Important Security Learning
+
+Vite variables beginning with:
+
+```text
+VITE_
+```
+
+are included in the frontend browser build.
+
+Therefore, `VITE_` variables must **never contain private server-side secrets**.
+
+Real environment files and credentials will not be committed to Git or copied into Docker images.
+
+Files such as:
+
+```text
+.env
+.env.production
+.env.local
+```
+
+must remain outside version control when they contain sensitive credentials.
+
+---
+
+# 🐳 Docker Implementation
+
+## 4. Created the Backend Dockerfile
+
+The first Docker configuration was created for the JerseyHub backend.
+
+### File
+
+```text
+backend/Dockerfile
+```
+
+### Dockerfile
+
+```dockerfile
+FROM node:24-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci --omit=dev
+
+COPY . .
+
+ENV NODE_ENV=production
+
+EXPOSE 2987
+
+CMD ["npm", "start"]
+```
+
+---
+
+## 5. Understanding the Backend Dockerfile
+
+### Base Image
+
+```dockerfile
+FROM node:24-alpine
+```
+
+Uses the lightweight Alpine-based Node.js 24 image as the base environment.
+
+---
+
+### Working Directory
+
+```dockerfile
+WORKDIR /app
+```
+
+Creates and sets `/app` as the working directory inside the container.
+
+Subsequent Docker commands operate from this directory.
+
+---
+
+### Copy Dependency Files
+
+```dockerfile
+COPY package*.json ./
+```
+
+Copies the Node.js dependency files before copying the complete application.
+
+This allows Docker's layer caching to avoid reinstalling dependencies unnecessarily when only application source code changes.
+
+---
+
+### Install Production Dependencies
+
+```dockerfile
+RUN npm ci --omit=dev
+```
+
+Installs dependencies using the lock file.
+
+`npm ci` provides reproducible dependency installation, while:
+
+```text
+--omit=dev
+```
+
+prevents development-only dependencies from being installed in the production image.
+
+---
+
+### Copy Application Code
+
+```dockerfile
+COPY . .
+```
+
+Copies the backend application source code into the container.
+
+---
+
+### Production Environment
+
+```dockerfile
+ENV NODE_ENV=production
+```
+
+Configures Node.js to run in production mode.
+
+---
+
+### Application Port
+
+```dockerfile
+EXPOSE 2987
+```
+
+Documents that the backend application expects to listen on port:
+
+```text
+2987
+```
+
+---
+
+### Start the Backend
+
+```dockerfile
+CMD ["npm", "start"]
+```
+
+Starts the Express backend when the container launches.
+
+---
+
+# 🧹 Docker Build Context
+
+## 6. Created `.dockerignore`
+
+A `.dockerignore` file was created for the backend.
+
+### File
+
+```text
+backend/.dockerignore
+```
+
+### Configuration
+
+```dockerignore
+node_modules
+.env
+.env.*
+!.env.example
+logs
+*.log
+npm-debug.log*
+coverage
+.DS_Store
+Dockerfile
+.dockerignore
+```
+
+The purpose of `.dockerignore` is to prevent unnecessary or sensitive files from being sent to Docker during the image build process.
+
+---
+
+## Why These Files Are Ignored
+
+### `node_modules`
+
+```text
+node_modules
+```
+
+Prevents locally installed dependencies from being copied into the Linux container.
+
+Dependencies should instead be installed inside the image using:
+
+```bash
+npm ci
+```
+
+---
+
+### Environment Files
+
+```text
+.env
+.env.*
+!.env.example
+```
+
+Prevents real environment files and credentials from entering Docker image layers.
+
+An example environment file may still be kept for documentation.
+
+---
+
+### Logs
+
+```text
+logs
+*.log
+npm-debug.log*
+```
+
+Prevents application and npm logs from increasing the Docker build context and image size.
+
+---
+
+### Coverage
+
+```text
+coverage
+```
+
+Prevents generated testing coverage files from being included in the production image.
+
+---
+
+### System Files
+
+```text
+.DS_Store
+```
+
+Prevents unnecessary operating-system metadata files from entering the image.
+
+---
+
+### Docker Configuration Files
+
+```text
+Dockerfile
+.dockerignore
+```
+
+Prevents Docker configuration files themselves from being copied into the application filesystem inside the final image.
+
+---
+
+# 📦 Git Version Control
+
+## 7. Committed the Initial Docker Configuration
+
+After reviewing the backend Docker configuration, the files were staged and inspected before committing.
+
+### Stage Docker Files
+
+```bash
+git add backend/Dockerfile backend/.dockerignore
+```
+
+### Review Staged Changes
+
+```bash
+git diff --cached
+```
+
+### Commit
+
+```bash
+git commit -m "Add backend Docker configuration"
+```
+
+### Push
+
+```bash
+git push
+```
+
+The Docker configuration was successfully committed with:
+
+```text
+311c731 Add backend Docker configuration
+```
+
+After pushing, the working tree was clean and synchronized with:
+
+```text
+origin/main
+```
+
+---
+
+# 📊 Current DevOps Progress
+
+| Task                                   | Status        |
+| -------------------------------------- | ------------- |
+| Separate DevOps repository             | ✅ Completed   |
+| Application architecture investigation | ✅ Completed   |
+| Environment configuration review       | ✅ Completed   |
+| Backend Dockerfile                     | ✅ Completed   |
+| Backend `.dockerignore`                | ✅ Completed   |
+| Docker configuration committed         | ✅ Completed   |
+| Backend Docker image build             | ⏳ Not Started |
+| Backend container testing              | ⏳ Not Started |
+| Runtime environment configuration      | ⏳ Not Started |
+| Frontend containerization              | ⏳ Not Started |
+| Multi-container configuration          | ⏳ Not Started |
+| Production reverse proxy               | ⏳ Not Started |
+| Cloud infrastructure                   | ⏳ Not Started |
+| Cloud deployment                       | ⏳ Not Started |
+| CI/CD pipeline                         | ⏳ Not Started |
+| Domain configuration                   | ⏳ Not Started |
+| HTTPS / SSL                            | ⏳ Not Started |
+| Secrets management                     | ⏳ Not Started |
+| Monitoring                             | ⏳ Not Started |
+| Logging                                | ⏳ Not Started |
+| Backup strategy                        | ⏳ Not Started |
+| Deployment automation                  | ⏳ Not Started |
+| Container orchestration                | ⏳ Not Started |
+| Infrastructure automation              | ⏳ Not Started |
+
+---
+
+# 🏗️ Current Architecture
+
+At this stage, the application can be represented as:
+
+```text
+                    JerseyHub
+                        │
+              ┌─────────┴─────────┐
+              │                   │
+          Frontend             Backend
+        React + Vite       Node.js + Express
+              │                   │
+          Port 5173            Port 2987
+                                  │
+                                  ▼
+                           MongoDB Atlas
+```
+
+The backend Docker configuration has now been prepared:
+
+```text
+                    JerseyHub
+                        │
+              ┌─────────┴─────────┐
+              │                   │
+          Frontend             Backend
+        React + Vite       Node.js + Express
+                                  │
+                                  ▼
+                          Backend Dockerfile
+                                  │
+                                  ▼
+                           MongoDB Atlas
+```
+
+However, the Docker image has **not yet been built or tested**.
+
+---
+
+# 🧠 Key Learnings From Part 1
+
+During this phase, I learned:
+
+1. Why DevOps implementation can be maintained separately from the original application repository.
+2. Why application architecture should be understood before containerization.
+3. How Dockerfiles define the environment required to run an application.
+4. The difference between application source code and container runtime configuration.
+5. Why `npm ci` is useful for reproducible Docker builds.
+6. Why production images should avoid unnecessary development dependencies.
+7. How `.dockerignore` reduces the Docker build context.
+8. Why `.env` files must never be copied into Docker images.
+9. Why frontend `VITE_` variables should be treated as browser-visible configuration.
+10. How Docker layer caching can make future builds more efficient.
+11. Why Docker images should be tested before moving to cloud deployment or CI/CD.
+
+---
+
+# 🚧 Current Status
+
+**JerseyHub DevOps Journey — Part 1 is complete.**
+
+At this stage:
+
+```text
+Application Review       ✅
+        │
+        ▼
+Environment Review       ✅
+        │
+        ▼
+Backend Dockerfile       ✅
+        │
+        ▼
+Backend .dockerignore    ✅
+        │
+        ▼
+Git Commit & Push        ✅
+        │
+        ▼
+Docker Image Build       ⏳ NEXT
+```
+
+The backend has been **prepared for containerization**, but the Docker image has not yet been built or executed.
+
+Therefore, this should not yet be considered a production deployment.
+
+It is simply the **first foundation layer of the complete JerseyHub DevOps implementation**.
+
+---
+
+# 🔜 Next Phase
+
+The next phase will begin by provisioning or preparing a Linux environment and performing the first real Docker build.
+
+The immediate next milestone is:
+
+```text
+Source Code
+     │
+     ▼
+Dockerfile
+     │
+     ▼
+docker build
+     │
+     ▼
+Docker Image
+     │
+     ▼
+docker run
+     │
+     ▼
+Backend Container
+     │
+     ▼
+Application Testing
+```
+
+After the backend container is successfully built and tested, the project can progressively move toward frontend containerization, multi-container deployment, CI/CD, cloud infrastructure, HTTPS, monitoring, logging, security, and deployment automation.
+
+---
+
+# 🏁 Part 1 Summary
+
+The first phase established the foundation for the JerseyHub DevOps journey.
+
+### Completed
+
+```text
+✅ Separate DevOps repository
+✅ Application architecture review
+✅ Environment variable review
+✅ Backend Dockerfile
+✅ Backend .dockerignore
+✅ Git commit
+✅ GitHub push
+```
+
+### Next
+
+```text
+🐳 Build the backend Docker image
+🧪 Run and test the backend container
+```
+
+This is **Part 1 only**.
+
+The project will continue evolving step by step toward a complete production DevOps workflow.
+
+---
+
+## 📁 File Name
+
+```text
+DEVOPS-JOURNEY-PART-1.md
+```
+
+## 🚀 Publish to GitHub
+
+```bash
+git add DEVOPS-JOURNEY-PART-1.md
+git diff --cached
+git commit -m "Document DevOps journey part 1"
+git push
+```
+
+---
+
+**JerseyHub DevOps Journey continues... 🚀**
