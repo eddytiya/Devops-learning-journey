@@ -1,0 +1,368 @@
+Backend Deployment Step 3
+
+This document continues after the AWS EC2 instance launch. It records how the Ubuntu host was prepared, Docker and swap were configured, the DevOps repository was cloned, the backend image was built, MongoDB Atlas was secured, and the private backend container was verified.
+
+> Security note: Never commit `.env`, database passwords, session secrets, email app passwords, or complete connection strings. Rotate all learning credentials before public deployment.
+
+## Result
+
+The current backend path is working:
+
+```mermaid
+flowchart LR
+    A[Windows SSH client] --> B[AWS EC2 Ubuntu 24.04]
+    B -->|127.0.0.1:2987| C[jerseyhub-backend container]
+    C -->|TLS| D[MongoDB Atlas Free Sydney]
+```
+
+Verified results:
+
+- Docker Engine and Compose installed from Docker's official Ubuntu repository.
+- Two GiB swap file enabled and persisted through reboot.
+- Separate `jerseyhub-devops` repository cloned to EC2.
+- Backend image `jerseyhub-backend:1.0` built successfully.
+- Atlas Free cluster created in AWS Sydney.
+- EC2 public address restricted through an Atlas `/32` access-list entry.
+- Restricted `jerseyhub_app` database user configured.
+- Backend container connected to Atlas and returned `HTTP/1.1 200 OK`.
+
+## Deployment configuration
+
+| Item | Value |
+|---|---|
+| AWS region | Asia Pacific Sydney `ap-southeast-2` |
+| Operating system | Ubuntu 24.04 LTS |
+| Instance type | `t3.micro` |
+| Storage | 25 GiB gp3 EBS |
+| Swap | 2 GiB swap file |
+| Docker image | `jerseyhub-backend:1.0` |
+| Backend port | `2987` |
+| Database | MongoDB Atlas Free |
+| Database region | AWS Sydney |
+
+## 1. Verify and prepare Ubuntu
+
+```bash
+whoami
+hostname
+cat /etc/os-release
+uname -m
+df -h
+free -h
+```
+
+Update packages and install the basic tools:
+
+```bash
+sudo apt update
+sudo apt upgrade -y
+sudo apt install -y git curl ca-certificates
+
+git --version
+curl --version
+```
+
+## 2. Install Docker Engine and Compose
+
+Create the APT keyring and add Docker's signing key:
+
+```bash
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+```
+
+Add Docker's official Ubuntu repository:
+
+```bash
+echo "Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc" \
+| sudo tee /etc/apt/sources.list.d/docker.sources
+```
+
+Install Docker:
+
+```bash
+sudo apt update
+sudo apt install -y \
+  docker-ce \
+  docker-ce-cli \
+  containerd.io \
+  docker-buildx-plugin \
+  docker-compose-plugin
+```
+
+Verify the installation:
+
+```bash
+sudo systemctl status docker --no-pager
+sudo docker --version
+sudo docker compose version
+sudo docker run hello-world
+```
+
+Allow the Ubuntu user to run Docker without `sudo`:
+
+```bash
+sudo usermod -aG docker $USER
+newgrp docker
+groups
+docker run hello-world
+systemctl is-enabled docker
+```
+
+## 3. Configure swap
+
+The `t3.micro` has approximately one GiB of RAM. A two GiB swap file provides emergency memory during builds and short memory spikes.
+
+```bash
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+free -h
+swapon --show
+```
+
+Persist swap across reboots:
+
+```bash
+sudo cp /etc/fstab /etc/fstab.backup
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+sudo reboot
+```
+
+After reconnecting:
+
+```bash
+free -h
+swapon --show
+systemctl is-active docker
+```
+
+## 4. Clone the DevOps repository
+
+```bash
+cd /home/ubuntu
+git clone https://github.com/eddytiya/jerseyhub-devops.git
+cd jerseyhub-devops
+
+git status
+git remote -v
+git branch --show-current
+```
+
+Expected branch: `main`.
+
+## 5. Build the backend image
+
+The backend uses:
+
+- `backend/Dockerfile` for image construction.
+- `backend/.dockerignore` to exclude secrets, local dependencies, logs, and coverage output.
+
+Build and inspect the image:
+
+```bash
+docker build -t jerseyhub-backend:1.0 ./backend
+docker image ls jerseyhub-backend
+free -h
+```
+
+## 6. Configure MongoDB Atlas
+
+The Atlas deployment used:
+
+| Setting | Value |
+|---|---|
+| Project | `JerseyHub-DevOps` |
+| Deployment | `jerseyhub-devops-db` |
+| Tier | Free |
+| Provider | AWS |
+| Region | Sydney `ap-southeast-2` |
+| Sample data | Disabled |
+
+### Network access
+
+Only the current EC2 public IPv4 address was added, using a `/32` entry.
+
+Verify the EC2 outbound address with:
+
+```bash
+curl -4 https://checkip.amazonaws.com
+```
+
+If EC2 is stopped and started, its auto-assigned public address can change. Update the Atlas IP access-list entry when this happens.
+
+### Database users
+
+Two users were created:
+
+| User | Purpose |
+|---|---|
+| `jerseyhub_setup_admin` | Initial Atlas setup administration |
+| `jerseyhub_app` | Backend application access |
+
+The application user was restricted to:
+
+- Cluster: `jerseyhub-devops-db`
+- Database: `jerseyhub`
+- Role: `readWrite`
+
+The backend must use `jerseyhub_app`, not the administrative account.
+
+## 7. Configure the backend environment
+
+Create the runtime file only on EC2:
+
+```bash
+cp backend/.env.example backend/.env
+chmod 600 backend/.env
+```
+
+Required structure:
+
+```dotenv
+MONGO_URI=<private-atlas-uri>
+SESSION_SECRET=<private-random-secret>
+RAZORPAY_ENABLED=false
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
+GOOGLE_CLIENT_ID=<configure-before-production>
+FRONTEND_URL=http://<current-ec2-public-ip>
+EMAIL_USER=adityapathak987@gmail.com
+EMAIL_PASS=<configure-before-production>
+PORT=2987
+NODE_ENV=production
+FREE_SHIPPING_THRESHOLD=1499
+STANDARD_SHIPPING_CHARGE=99
+GST_RATE=5
+COD_MAX_AMOUNT=0
+PAYMENT_RECOVERY_ENABLED=false
+PAYMENT_RECOVERY_GRACE_MINUTES=15
+INVENTORY_RESERVATION_MINUTES=15
+```
+
+Generate a session secret:
+
+```bash
+openssl rand -hex 32
+```
+
+Verify variable names without printing their values:
+
+```bash
+cut -d= -f1 backend/.env
+wc -l backend/.env
+cut -d= -f1 backend/.env | sort | uniq -d
+stat -c '%a %n' backend/.env
+git status --short
+```
+
+Expected permission:
+
+```text
+600 backend/.env
+```
+
+`backend/.env` must not appear in Git status.
+
+## 8. Start the backend container privately
+
+```bash
+docker run -d \
+  --name jerseyhub-backend \
+  --env-file backend/.env \
+  -p 127.0.0.1:2987:2987 \
+  jerseyhub-backend:1.0
+```
+
+The loopback binding keeps port `2987` private until Nginx or another reverse proxy is configured.
+
+Inspect the container:
+
+```bash
+docker ps -a --filter name=jerseyhub-backend
+docker logs --tail 100 jerseyhub-backend
+```
+
+When environment values change, remove and recreate the container because an existing container does not reload `--env-file` automatically:
+
+```bash
+docker rm jerseyhub-backend
+```
+
+## 9. Troubleshooting completed
+
+### Missing Google and email variables
+
+The application validation required non-empty `GOOGLE_CLIENT_ID` and `EMAIL_PASS` values. Temporary infrastructure-test values allowed backend and database testing, but Google login and email delivery remain unavailable.
+
+### MongoDB authentication failure
+
+```text
+MongoServerError: bad auth : authentication failed
+```
+
+This proved that DNS, TLS, the Atlas IP access list, and cluster reachability worked. The application user's password and URI were synchronized to resolve authentication.
+
+### Email login failure
+
+```text
+Email Server Error: Invalid login
+```
+
+This is expected while using a temporary email password. It did not stop the backend container.
+
+## 10. Verify the backend
+
+Successful container logs:
+
+```text
+MongoDB Atlas Connected
+Server running on port 2987
+```
+
+Local HTTP test:
+
+```bash
+curl -i --max-time 5 http://127.0.0.1:2987/
+```
+
+Successful response:
+
+```text
+HTTP/1.1 200 OK
+Football Jersey Store API Running
+```
+
+## Current status
+
+The backend milestone is complete for the learning environment:
+
+```text
+EC2 → Docker backend container → MongoDB Atlas
+```
+
+Still intentionally pending:
+
+- Production Google OAuth credentials
+- Gmail app password or optional email configuration
+- Credential rotation
+- Frontend Docker image
+- Nginx
+- Docker Compose
+- Domain and HTTPS
+- CI/CD
+- Monitoring and operational hardening
+
+## Next step
+
+Step 4 begins by inspecting the React and Vite frontend, creating a multi-stage frontend Dockerfile, serving the compiled frontend through Nginx, and connecting both containers through Docker Compose.
