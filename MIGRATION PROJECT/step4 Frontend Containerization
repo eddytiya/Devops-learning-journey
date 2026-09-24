@@ -1,0 +1,208 @@
+Step 4 Frontend Containerization
+
+This step converted the JerseyHub React and Vite frontend into a production Docker image served by Nginx. It also established the /api reverse-proxy design required for Docker Compose integration.
+
+## Outcome
+
+- Inspected the Vite build configuration and API URL usage.
+- Confirmed the Express route prefixes.
+- Created a multi-stage frontend Dockerfile.
+- Configured Nginx for React Router and API proxying.
+- Created frontend/.dockerignore.
+- Repaired and verified the npm lock file.
+- Built jerseyhub-frontend:1.0.
+- Committed and pushed the Step 4 changes.
+
+~~~mermaid
+flowchart LR
+    A[Browser] -->|Port 80| B[Nginx frontend]
+    B -->|Static files| C[React and Vite]
+    B -->|/api| D[Backend port 2987]
+    D --> E[MongoDB Atlas]
+~~~
+## 1 Inspect the frontend
+
+These read-only commands identified the build process, configuration files, and API URL usage.
+
+~~~bash
+cd ~/jerseyhub-devops
+cat frontend/package.json
+find frontend -maxdepth 2 -type f \
+  \( -name 'vite.config.*' -o -name '.env.example' -o -name 'Dockerfile' \) -print
+grep -R --line-number --exclude-dir=node_modules --exclude-dir=dist \
+  -E 'VITE_API_URL|localhost:2987|axios.create|baseURL' frontend
+~~~
+The project uses npm run build, which invokes Vite and writes production files to frontend/dist.
+
+## 2 Understand the API URL
+
+~~~javascript
+const API_URL =
+    import.meta.env.VITE_API_URL || "http://localhost:2987";
+
+export default API_URL;
+~~~
+Components append paths such as /category, /jersey, /cart, /order, and /user. Production uses VITE_API_URL=/api. localhost:2987 cannot be used publicly because it would refer to the visitor's computer.
+
+## 3 Confirm the backend routes
+
+Express mounts routes directly without an /api prefix.
+
+~~~javascript
+app.use('/jersey', jerseyRouter);
+app.use('/product', productRoute);
+app.use('/category', categoryRoute);
+app.use('/user', userRouter);
+app.use('/cart', cartRoute);
+app.use('/order', orderRoute);
+app.use('/profile', profileRoute);
+~~~
+Nginx therefore removes /api before forwarding. /api/category reaches Express as /category.
+
+## 4 Frontend Dockerfile
+
+File: frontend/Dockerfile
+
+~~~dockerfile
+FROM node:24-alpine AS build
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=$VITE_API_URL
+ARG VITE_RAZORPAY_ENABLED=false
+ENV VITE_RAZORPAY_ENABLED=$VITE_RAZORPAY_ENABLED
+
+RUN npm run build
+
+FROM nginx:alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+~~~
+The Node stage builds the app. The final stage contains only Nginx, its configuration, and compiled files, so development dependencies are not shipped.
+
+## 5 Nginx configuration
+
+File: frontend/nginx.conf
+
+~~~nginx
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location /api/ {
+        proxy_pass http://backend:2987/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location = /index.html {
+        add_header Cache-Control "no-store, no-cache, must-revalidate";
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+~~~
+The proxy_pass trailing slash removes /api/. try_files supports direct React Router navigation. Docker Compose supplies the hostname backend in Step 5.
+
+## 6 Docker build exclusions
+
+File: frontend/.dockerignore
+
+~~~text
+node_modules
+dist
+.env
+.env.*
+!.env.example
+logs
+*.log
+npm-debug.log*
+coverage
+.DS_Store
+Dockerfile
+.dockerignore
+~~~
+nginx.conf remains included because Docker copies it. Environment files are excluded to avoid including secrets.
+
+## 7 Repair the lock file
+
+The first npm ci failed because package.json and package-lock.json were out of sync. @emnapi/core and @emnapi/runtime were missing. The lock file was repaired instead of weakening the reproducible build.
+
+~~~bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" -e HOME=/tmp \
+  -v "$PWD/frontend:/app" -w /app node:24-alpine \
+  npm install --package-lock-only
+~~~
+The corrected graph was verified with the same Node image.
+
+~~~bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" -e HOME=/tmp \
+  -v "$PWD/frontend:/app" -w /app node:24-alpine npm ci
+
+rm -rf frontend/node_modules
+~~~
+Verification installed 466 packages and reported zero vulnerabilities.
+
+## 8 Build the image
+
+~~~bash
+docker build --progress=plain \
+  -t jerseyhub-frontend:1.0 ./frontend
+
+docker image ls jerseyhub-frontend
+~~~
+The successful build transformed 2,640 modules, generated Vite and PWA output, copied dist into Nginx, and tagged the image.
+
+| Image | Disk usage | Content size |
+|---|---:|---:|
+| jerseyhub-frontend:1.0 | 96 MB | 26.8 MB |
+
+The chunk-size warning did not fail the build and can be addressed later through code splitting.
+
+## 9 Commit and push
+
+~~~bash
+git add frontend/.dockerignore frontend/package-lock.json
+git diff --cached --stat
+git diff --cached --check
+git commit -m "Fix frontend Docker build dependencies"
+git push origin main
+~~~
+Published commit: 87c329f Fix frontend Docker build dependencies.
+
+## Files involved
+
+| File | Purpose |
+|---|---|
+| frontend/Dockerfile | Builds Vite and packages output in Nginx. |
+| frontend/nginx.conf | Serves React and proxies /api/ to the backend. |
+| frontend/.dockerignore | Excludes dependencies, secrets, output, and logs. |
+| frontend/package-lock.json | Provides the synchronized graph used by npm ci. |
+
+## Security decisions
+
+- Frontend .env files are excluded from the build context.
+- No credentials, session secrets, email passwords, or GitHub tokens are documented.
+- Razorpay remains disabled.
+- The backend remains private on port 2987.
+- Production authentication still requires HTTPS because secure cookies are enabled.
+
+## Completion and next step
+
+Step 4 is complete. Step 5 will add Docker Compose, a shared network, coordinated startup, restart behavior, health checks, and public exposure only through Nginx on port 80.
